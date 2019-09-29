@@ -1,4 +1,4 @@
-package sht
+package plopper
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 type PlopStore interface {
-	Create(context.Context, string) (PlopID, error)
+	Create(context.Context, string, string) (PlopID, error)
 	ListPlops(context.Context, time.Time, int) ([]*Plop, error)
 	Plop(context.Context, PlopID) (*Plop, error)
 	Close() error
@@ -38,6 +38,7 @@ func OpenSQLitePlopStore(dbPath string) (PlopStore, error) {
 		CREATE TABLE IF NOT EXISTS
 		plops (
 			id BLOB PRIMARY KEY CHECK (length(id) = 16),
+			author_id TEXT NOT NULL,
 			created_at TIMESTAMP NOT NULL,
 			content TEXT NOT NULL
 		)
@@ -68,12 +69,12 @@ func (s *sqlPlopStore) Plop(ctx context.Context, id PlopID) (*Plop, error) {
 	}
 }
 
-func (s *sqlPlopStore) Create(ctx context.Context, content string) (PlopID, error) {
+func (s *sqlPlopStore) Create(ctx context.Context, authorID string, content string) (PlopID, error) {
 	id := newPlopID()
 	now := time.Now().UTC()
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO plops (id, created_at, content) VALUES (?, ?, ?)
-	`, id, now, content)
+		INSERT INTO plops (id, author_id, created_at, content) VALUES (?, ?, ?, ?)
+	`, id, authorID, now, content)
 	return id, err
 }
 
@@ -87,7 +88,7 @@ func newPlopID() PlopID {
 
 func (s *sqlPlopStore) ListPlops(ctx context.Context, olderThan time.Time, limit int) ([]*Plop, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, created_at, content
+		SELECT id, author_id, created_at, content
 		FROM plops
 		WHERE created_at < ?
 		ORDER BY created_at DESC
@@ -101,7 +102,7 @@ func (s *sqlPlopStore) ListPlops(ctx context.Context, olderThan time.Time, limit
 	results := make([]*Plop, 0, limit)
 	for rows.Next() {
 		var p Plop
-		if err := rows.Scan(&p.ID, &p.CreatedAt, &p.Content); err != nil {
+		if err := rows.Scan(&p.ID, &p.AuthorID, &p.CreatedAt, &p.Content); err != nil {
 			return results, fmt.Errorf("cannot scan plop entry: %w", err)
 		}
 		results = append(results, &p)
@@ -113,6 +114,7 @@ func (s *sqlPlopStore) ListPlops(ctx context.Context, olderThan time.Time, limit
 
 type Plop struct {
 	ID        PlopID
+	AuthorID  string
 	CreatedAt time.Time
 	Content   string
 }

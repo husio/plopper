@@ -1,4 +1,4 @@
-package sht
+package plopper
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func TestCreateAndList(t *testing.T) {
 	}
 	defer store.Close()
 
-	firstID, err := store.Create(ctx, "first")
+	firstID, err := store.Create(ctx, "000000000000001", "first")
 	if err != nil {
 		t.Fatalf("cannot create first plop: %s", err)
 	}
@@ -28,7 +28,7 @@ func TestCreateAndList(t *testing.T) {
 		t.Fatalf("unexpected plop: %+v", first)
 	}
 
-	secondID, err := store.Create(ctx, "second")
+	secondID, err := store.Create(ctx, "000000000000001", "second")
 	if err != nil {
 		t.Fatalf("cannot create second plop: %s", err)
 	}

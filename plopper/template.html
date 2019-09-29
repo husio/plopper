@@ -1,0 +1,154 @@
+{{- define "header" -}}
+<!doctype html>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="sha256-l85OmPOjvil/SOvVt3HnSSjzF1TUMyT9eV0c2BzEGzU=" crossorigin="anonymous" />
+<style>{{template "main.css"}}</style>
+{{end}}
+
+{{- define "footer" -}}
+{{- end}}
+
+
+{{- define "fail" -}}
+	{{- template "header" -}}
+	<div>
+		{{.Description}}
+	</div>
+	{{- template "footer" -}}
+{{- end}}
+
+
+{{define "std"}}
+	{{- template "header" -}}
+	{{.}}
+	{{- template "footer" -}}
+{{end}}
+
+
+{{define "list-plops"}}
+	{{- template "header"}}
+
+	<h1>
+		Welcome to Plopper!
+		<small>
+			<a href="https://www.youtube.com/watch?v=SbbNf0TEh8g" target="_blank">What is plop?</a>
+		</small>
+	</h1>
+
+	<form class="create-plop" action="/create" method="POST">
+    <div class="info">
+      <p>
+        This is a demo application to show how integration with <a href="https://lith-demo.herokuapp.com/">a lith application</a> can be done.
+      </p>
+      <p>
+        You can <a href="/accounts/login/">login</a> or <a href="/accounts/logout/">logout</a> using <a href="https://lith-demo.herokuapp.com/">lith-demo</a> accounts. Make sure to use one with <code>plopper:create</code> permission.
+      </p>
+
+      <p>
+        You are currently
+          {{if .Account}}
+          authenticated and using account <a href="https://lith-demo.herokuapp.com/admin/accounts/{{.Account.AccountID}}">{{.Account.AccountID}}</a> with permissions
+            {{range .Account.Permissions}} <code>{{.}}</code> {{end}}
+          {{else}}
+            not authenticated.
+          {{end}}
+      </p>
+    </div>
+
+    <textarea {{if not .Account}}disabled{{end}} id="content" name="content" placeholder="Write your plop here." required minlength="3" maxlength="1024" pattern=".{3,1024}"></textarea>
+    {{if .Account}}
+      <button {{if not .Account}}disabled{{end}} >Publish</button><small id="info"></small>
+      or <a href="/accounts/logout/?next=/">logout</a>.
+    {{else}}
+      <a href="/accounts/login/?next=/">Login</a> in order to publish.
+    {{end}}
+	</form>
+
+	{{range .Plops}}
+		{{template "render-plop" .}}
+	{{else}}
+		No plops
+	{{end}}
+
+	{{if .IsNewest}}
+		Those are the newest plops
+	{{else}}
+		<a href="/">Show newest plops</a>
+	{{end}}
+	{{if .NextPage}}
+		<a href="/?olderThan={{.NextPage}}">Show older plops</a>
+	{{else}}
+		Those are the oldest plops
+	{{end}}
+
+
+	{{- template "footer" -}}
+	<script>
+window.addEventListener("load", function() {
+	var content = document.getElementById("content")
+	    info = document.getElementById("info")
+	    update = function() {
+		    var len = (new TextEncoder().encode(content.value)).length
+		        valid = len >= parseInt(content.attributes.minlength.value, 10) &&
+			        len <= parseInt(content.attributes.maxlength.value, 10)
+		    info.classList.toggle("invalid", !valid)
+		    if (len === 0) {
+			    info.innerHTML = ""
+		    } else {
+			    info.innerHTML = " " + len + "/1024"
+		    }
+		    // Adjust height
+		    content.style.overflowY = "hidden"
+		    content.style.height = "1px"
+		    content.style.height = (content.scrollHeight)+"px"
+	    }
+	update()
+	content.addEventListener("input", update)
+	content.addEventListener("change", update)
+	content.addEventListener("keyup", update)
+	content.addEventListener("keydown", function(e) {
+		if (e.ctrlKey && e.keyCode === 13) {
+			content.parentNode.submit()
+		}
+	})
+})
+	</script>
+{{end}}
+
+
+{{define "show-plop"}}
+	{{- template "header"}}
+	{{- template "render-plop" . -}}
+	<a href="/">Show newest plops</a>
+	{{- template "footer" -}}
+{{end}}
+
+{{define "render-plop"}}
+	<div class="plop" id="plop-{{.ID}}">
+		<div class="created-at" title="{{.CreatedAt }}">
+			<a href="/plop/{{.ID}}"> &#128279; </a>
+			{{.CreatedAt.Format "2 Jan 2006"}}
+		</div>
+		<div class="content">{{.Content}}</div>
+	</div>
+{{end}}
+
+
+{{define "main.css"}}
+* 		{ box-sizing: border-box; }
+body 		{ max-width: 600px; margin: 0 auto; }
+a 		{ color: #2881D6; text-decoration: none; }
+a:hover         { color: #D62847; }
+a:visited       { color: #6B28D6; }
+h1 small        { font-size: 40%; }
+.invalid        { color: #C55656; }
+
+form.create-plop 		{ margin: 20px 0; }
+form.create-plop textarea 	{ width: 100%; padding: 8px; min-height: 1em; resize: none; }
+form.create-plop button         { margin: 4px 0; }
+
+.plop 			{ border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 3px; position: relative; }
+.plop .created-at 	{ font-size: 80%; position: absolute; top: 4px; right: 6px; }
+.plop .content 		{ padding-top: 0.8em; white-space: break-spaces; }
+
+.info { padding: 1rem 2rem; border: 1px solid #76D1FF; background-color: #E7F7FF; margin: 2rem 0; }
+{{end}}

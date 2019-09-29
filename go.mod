@@ -1,5 +1,5 @@
-module github.com/husio/shitter
+module github.com/husio/plopper
 
-go 1.13
+go 1.17
 
-require github.com/mattn/go-sqlite3 v1.11.0
+require github.com/mattn/go-sqlite3 v1.14.11
